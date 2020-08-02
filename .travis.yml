@@ -6,6 +6,7 @@ php:
 
 services:
   - mysql
+  - postgresql
 
 env:
   matrix:
@@ -17,6 +18,9 @@ matrix:
   fast_finish: true
 
   include:
+    - php: 7.3
+      env: DB=pgsql db_dsn='postgres://postgres@127.0.0.1/cakephp_test'
+
     - php: 7.4
       env: CHECKS=1 DEFAULT=0
 
@@ -27,9 +31,13 @@ before_install:
   - if [[ $CODECOVERAGE != 1 ]]; then phpenv config-rm xdebug.ini ; fi
 
 before_script:
-  - composer install --prefer-source --no-interaction
-
   - if [[ $DB == 'mysql' ]]; then mysql -e 'CREATE DATABASE cakephp_test;'; fi
+  - if [[ $DB == 'pgsql' ]]; then psql -c 'CREATE DATABASE cakephp_test;' -U postgres; fi
+
+  - composer install --prefer-source --no-interaction
+  - bin/cake migrations migrate
+  - bin/cake migrations seed
+
   - if [[ $CHECKS != 1 ]]; then composer require phpunit/phpunit:"^8.3"; fi
 
   - cp config/app.php config/app_local.php
